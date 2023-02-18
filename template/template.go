@@ -1,8 +1,13 @@
 package template
 
+import (
+	yaml "gopkg.in/yaml.v2"
+)
+
 type FsConventions struct {
-	Naming   string
-	FlucdDir string
+	Naming    string
+	FluxcdDir string `yaml:"fluxcd_directory"`
+	AppsDir   string `yaml:"apps_directory"`
 }
 
 type Orchestration struct {
