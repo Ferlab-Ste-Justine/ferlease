@@ -12,7 +12,6 @@ type Config struct {
 	Service           string
 	Release           string
 	Repo              string
-	RepoPath          string `yaml:"repo_path"`
 	GitSshKey         string `yaml:"git_ssh_key"`
 	GitKnownKey       string `yaml:"git_known_key"`
 	TemplateDirectory string `yaml:"template_directory"`
