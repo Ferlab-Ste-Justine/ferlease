@@ -1,6 +1,7 @@
 package template
 
 import (
+	"bytes"
 	"io/ioutil"
 	"path"
 	"text/template"
@@ -25,61 +26,78 @@ type Orchestration struct {
 	AppFiles      []string
 }
 
-func loadFsConventions(path string, params *TemplateParameters) (*FsConventions, error) {
+func loadFsConventions(fPath string, params *TemplateParameters) (*FsConventions, error) {
 	var conv FsConventions
 	
-	f, err := ioutil.ReadFile(path.Join(path, "filesystem-conventions.yml"))
+	f, err := ioutil.ReadFile(path.Join(fPath, "filesystem-conventions.yml"))
 	if err != nil {
 		return nil, err
 	}
 
-	tmpl, tErr := template.New("FsConventions").Parse(f)
+	tmpl, tErr := template.New("FsConventions").Parse(string(f))
 	if tErr != nil {
 		return nil, tErr
 	}
 
 	var b bytes.Buffer
-	exErr = tmpl.Execute(&b, params)
+	exErr := tmpl.Execute(&b, params)
 	if exErr != nil {
 		return nil, exErr
 	}
 
-	yamlErr = yaml.Unmarshal(b, &c)
+	yamlErr := yaml.Unmarshal(b.Bytes(), &conv)
 	if yamlErr != nil {
 		return nil, yamlErr
 	}
 
-	return FsConventions, nil
+	return &conv, nil
 }
 
-func loadFluxcdFile(path string, params *TemplateParameters) (string, error) {
+func loadFluxcdFile(fPath string, params *TemplateParameters) (string, error) {
 	//path.Join(path, "fluxcd.yml")
-	return nil, nil
+	return "", nil
 }
 
-func loadAppFiles(path string, params *TemplateParameters) ([]string, error) {
+func loadAppFiles(aPath string, params *TemplateParameters) ([]string, error) {
 	//path.Join(path, "app")
-	return nil, nil
+	return []string{}, nil
 }
 
-func LoadTemplate(path string, params *TemplateParameters) (*Orchestration, error) {
+func LoadTemplate(tPath string, params *TemplateParameters) (*Orchestration, error) {
 	var o Orchestration
 
-	o.FsConvention, fsCoErr := loadFsConventions(path, params)
+	var fsCoErr error
+	o.FsConventions, fsCoErr = loadFsConventions(tPath, params)
 	if fsCoErr != nil {
 		return nil, fsCoErr
 	}
 
-	o.FluxcdFile, flFiErr := loadFluxcdFile(path, params)
+	var flFiErr error
+	o.FluxcdFile, flFiErr = loadFluxcdFile(tPath, params)
 	if flFiErr != nil {
 		return nil, flFiErr
 	}
 
-
-	o.AppFiles, appFlsErr := loadAppFiles(path, params)
+	var appFlsErr error
+	o.AppFiles, appFlsErr = loadAppFiles(tPath, params)
 	if appFlsErr != nil {
 		return nil, appFlsErr
 	}
 
-	return o, nil
+	return &o, nil
+}
+
+func ExecuteString(s string, params *TemplateParameters) (string, error) {
+	tmpl, tErr := template.New("string").Parse(s)
+	if tErr != nil {
+		return "", tErr
+	}
+
+	var b bytes.Buffer
+	exErr := tmpl.Execute(&b, params)
+	if exErr != nil {
+		return "", exErr
+	}
+
+	return string(b.Bytes()), nil
 }

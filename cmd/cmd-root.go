@@ -17,7 +17,7 @@ func generateRootCmd() *cobra.Command {
 		Short: "Manages releases of different versions of a service in fluxcd git repo using templated orchestration",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			var err error
-			conf, err = config.GetConfig()
+			conf, err = config.GetConfig(confPath)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
