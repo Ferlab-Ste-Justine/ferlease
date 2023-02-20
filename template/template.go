@@ -54,8 +54,24 @@ func loadFsConventions(fPath string, params *TemplateParameters) (*FsConventions
 }
 
 func loadFluxcdFile(fPath string, params *TemplateParameters) (string, error) {
-	//path.Join(path, "fluxcd.yml")
-	return "", nil
+	f, err := ioutil.ReadFile(path.Join(fPath, "fluxcd.yml"))
+	if err != nil {
+		return "", err
+	}
+
+	tmpl, tErr := template.New("FluxcdFile").Parse(string(f))
+	if tErr != nil {
+		return "", tErr
+	}
+
+	var b bytes.Buffer
+	exErr := tmpl.Execute(&b, params)
+	if exErr != nil {
+		return "", exErr
+	}
+
+
+	return string(b.Bytes()), nil
 }
 
 func loadAppFiles(aPath string, params *TemplateParameters) ([]string, error) {
