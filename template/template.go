@@ -2,8 +2,10 @@ package template
 
 import (
 	"bytes"
+	"io/fs"
 	"io/ioutil"
 	"path"
+	"path/filepath"
 	"text/template"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -23,29 +25,38 @@ type FsConventions struct {
 type Orchestration struct {
 	FsConventions *FsConventions 
 	FluxcdFile    string
-	AppFiles      []string
+	AppFiles      map[string]string
 }
 
-func loadFsConventions(fPath string, params *TemplateParameters) (*FsConventions, error) {
-	var conv FsConventions
-	
-	f, err := ioutil.ReadFile(path.Join(fPath, "filesystem-conventions.yml"))
+func applyFile(fPath string, params *TemplateParameters) ([]byte, error) {
+	f, err := ioutil.ReadFile(fPath)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 
-	tmpl, tErr := template.New("FsConventions").Parse(string(f))
+	tmpl, tErr := template.New("template").Parse(string(f))
 	if tErr != nil {
-		return nil, tErr
+		return []byte{}, tErr
 	}
 
 	var b bytes.Buffer
 	exErr := tmpl.Execute(&b, params)
 	if exErr != nil {
-		return nil, exErr
+		return []byte{}, exErr
 	}
 
-	yamlErr := yaml.Unmarshal(b.Bytes(), &conv)
+	return b.Bytes(), nil
+}
+
+func loadFsConventions(fPath string, params *TemplateParameters) (*FsConventions, error) {
+	var conv FsConventions
+	
+	res, err := applyFile(path.Join(fPath, "filesystem-conventions.yml"), params)
+	if err != nil {
+		return nil, err
+	}
+
+	yamlErr := yaml.Unmarshal(res, &conv)
 	if yamlErr != nil {
 		return nil, yamlErr
 	}
@@ -54,29 +65,38 @@ func loadFsConventions(fPath string, params *TemplateParameters) (*FsConventions
 }
 
 func loadFluxcdFile(fPath string, params *TemplateParameters) (string, error) {
-	f, err := ioutil.ReadFile(path.Join(fPath, "fluxcd.yml"))
+	res, err := applyFile(path.Join(fPath, "fluxcd.yml"), params)
 	if err != nil {
 		return "", err
 	}
 
-	tmpl, tErr := template.New("FluxcdFile").Parse(string(f))
-	if tErr != nil {
-		return "", tErr
-	}
-
-	var b bytes.Buffer
-	exErr := tmpl.Execute(&b, params)
-	if exErr != nil {
-		return "", exErr
-	}
-
-
-	return string(b.Bytes()), nil
+	return string(res), nil
 }
 
-func loadAppFiles(aPath string, params *TemplateParameters) ([]string, error) {
-	//path.Join(path, "app")
-	return []string{}, nil
+func loadAppFiles(aPath string, params *TemplateParameters) (map[string]string, error) {
+	dir := path.Join(aPath, "app")
+
+	app := map[string]string{}
+
+	err := filepath.Walk(dir, func(fPath string, fInfo fs.FileInfo, fErr error) error {
+		if fErr != nil {
+			return fErr
+		}
+
+		if fInfo.IsDir() {
+			return nil
+		}
+
+		res, appErr := applyFile(fPath, params)
+		if appErr != nil {
+			return appErr
+		}	
+		app[fPath] = string(res)
+
+		return nil
+	})
+
+	return app, err
 }
 
 func processTemplatePath(tPath string, params *TemplateParameters) (string, error) {

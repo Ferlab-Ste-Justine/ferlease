@@ -43,8 +43,10 @@ func generateRootCmd() *cobra.Command {
 				Service: conf.Service,
 				Release: conf.Release,
 			}
-			_, err = template.LoadTemplate(conf.TemplateDirectory, &tmpl)
+			orchest, err = template.LoadTemplate(conf.TemplateDirectory, &tmpl)
 			AbortOnErr(err)
+
+			fmt.Println(*orchest)
 		},
 	}
 
