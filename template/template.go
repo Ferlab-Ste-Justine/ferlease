@@ -9,7 +9,7 @@ import (
 )
 
 type TemplateParameters struct {
-	Repo    string
+	RepoDir string
 	Service string
 	Release string
 }
@@ -63,8 +63,29 @@ func loadAppFiles(aPath string, params *TemplateParameters) ([]string, error) {
 	return []string{}, nil
 }
 
+func processTemplatePath(tPath string, params *TemplateParameters) (string, error) {
+	tmpl, tErr := template.New("string").Parse(tPath)
+	if tErr != nil {
+		return "", tErr
+	}
+
+	var b bytes.Buffer
+	exErr := tmpl.Execute(&b, params)
+	if exErr != nil {
+		return "", exErr
+	}
+
+	return string(b.Bytes()), nil
+}
+
 func LoadTemplate(tPath string, params *TemplateParameters) (*Orchestration, error) {
 	var o Orchestration
+
+	var tPathErr error
+	tPath, tPathErr = processTemplatePath(tPath, params)
+	if tPathErr != nil {
+		return nil, tPathErr
+	}
 
 	var fsCoErr error
 	o.FsConventions, fsCoErr = loadFsConventions(tPath, params)
@@ -85,19 +106,4 @@ func LoadTemplate(tPath string, params *TemplateParameters) (*Orchestration, err
 	}
 
 	return &o, nil
-}
-
-func ExecuteString(s string, params *TemplateParameters) (string, error) {
-	tmpl, tErr := template.New("string").Parse(s)
-	if tErr != nil {
-		return "", tErr
-	}
-
-	var b bytes.Buffer
-	exErr := tmpl.Execute(&b, params)
-	if exErr != nil {
-		return "", exErr
-	}
-
-	return string(b.Bytes()), nil
 }
