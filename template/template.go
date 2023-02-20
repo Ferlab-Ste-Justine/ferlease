@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"text/template"
+	"strings"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -91,7 +92,7 @@ func loadAppFiles(aPath string, params *TemplateParameters) (map[string]string, 
 		if appErr != nil {
 			return appErr
 		}	
-		app[fPath] = string(res)
+		app[strings.TrimPrefix(fPath, dir)] = string(res)
 
 		return nil
 	})
