@@ -27,21 +27,18 @@ func generateRootCmd() *cobra.Command {
 			conf, err := config.GetConfig(confPath)
 			AbortOnErr(err)
 
-			repoPath := GetRepoPath(conf)
-
-			exists, existsErr := PathExists(repoPath)
+			exists, existsErr := PathExists(conf.RepoDir)
 			AbortOnErr(existsErr)
 
 			if exists {
-				err = os.RemoveAll(repoPath)
+				err = os.RemoveAll(conf.RepoDir)
 				AbortOnErr(err)
 			}
 
-			repo, _, repErr := git.SyncGitRepo(repoPath, conf.Repo, conf.RepoBranch, conf.GitSshKey, conf.GitKnownKey)
+			repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.RepoBranch, conf.GitSshKey, conf.GitKnownKey)
 			AbortOnErr(repErr)
 
 			tmpl := template.TemplateParameters{
-				RepoDir: repoPath,
 				Service: conf.Service,
 				Release: conf.Release,
 			}

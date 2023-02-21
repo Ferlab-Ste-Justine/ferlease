@@ -3,8 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-
-	"ferlab/ferlease/config"
+	"path"
 )
 
 func AbortOnErr(err error) {
@@ -42,6 +41,18 @@ func WriteOnFile(path string, content string) error {
 	return err
 }
 
-func GetRepoPath(c *config.Config) string {
-	return fmt.Sprintf("%s-%s", c.Service, c.Release)
+func PathRelativeToRepo(fPath string, repo string) string {
+	relative := ""
+	for true {
+		dir := path.Dir(fPath)
+		file := path.Base(fPath)
+		if file == repo {
+			break
+		}
+		
+		fPath = dir
+		relative = path.Join(file, relative)
+	}
+
+	return relative
 }

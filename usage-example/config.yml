@@ -1,7 +1,8 @@
 service: hello-world
 release: "test"
-repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
+repo: "git@github.com:Magnitus-/ferlease-playground.git"
 repo_branch: main
 git_ssh_key: "~/.ssh/id_rsa"
 git_known_key: "known_host"
 template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}"
+commit_message: "Releasing release {{.Release}} of service {{.Service}}"

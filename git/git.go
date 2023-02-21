@@ -141,3 +141,34 @@ func VerifyTopCommit(repo *gogit.Repository, armoredKeyrings []string) error {
 
 	return errors.New(fmt.Sprintf("Top commit \"%s\" isn't signed with any of the trusted keys", head.Hash()))
 }
+
+func CommitFiles(repo *gogit.Repository, files []string, msg string) (bool, error) {
+	w, wErr := repo.Worktree()
+	if wErr != nil {
+		return false, errors.New(fmt.Sprintf("Error accessing repo worktree: %s", wErr.Error()))
+	}
+
+	for _, file := range files {
+		_, addErr := w.Add(file)
+		if addErr != nil {
+			return false, errors.New(fmt.Sprintf("Error staging file %s for commit: %s", file, addErr.Error()))
+		}
+	}
+
+	stat, statErr := w.Status()
+	if statErr != nil {
+		return false, errors.New(fmt.Sprintf("Error getting repo status after staging files: %s", statErr.Error()))
+	}
+
+	if len(stat) == 0 {
+		fmt.Print("Will not commit as there are no changes to commit.")
+		return false, nil
+	}
+
+	_, commErr := w.Commit(msg, &gogit.CommitOptions{})
+	if commErr != nil {
+		return false, errors.New(fmt.Sprintf("Error commiting file changes: %s", commErr.Error()))
+	}
+
+	return true, nil
+}

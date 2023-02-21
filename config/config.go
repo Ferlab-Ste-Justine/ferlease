@@ -1,12 +1,14 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
+	"text/template"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -14,11 +16,29 @@ type Config struct {
 	Service           string
 	Release           string
 	Repo              string
+	RepoDir           string `yaml:"-"`
 	RepoBranch        string `yaml:"repo_branch"`
 	GitSshKey         string `yaml:"git_ssh_key"`
 	GitKnownKey       string `yaml:"git_known_key"`
 	TemplateDirectory string `yaml:"template_directory"`
+	CommitMessage     string `yaml:"commit_message"`
 }
+
+func renderStr(s string, c *Config) (string, error) {
+	tmpl, tErr := template.New("string").Parse(s)
+	if tErr != nil {
+		return "", tErr
+	}
+
+	var b bytes.Buffer
+	exErr := tmpl.Execute(&b, *c)
+	if exErr != nil {
+		return "", exErr
+	}
+
+	return string(b.Bytes()), nil
+}
+
 
 func expandPath(fpath string, homedir string) string {
 	if strings.HasPrefix(fpath, "~/") {
@@ -46,6 +66,22 @@ func GetConfig(path string) (*Config, error) {
 		c.GitKnownKey = expandPath(c.GitKnownKey, homeDir)
 		c.TemplateDirectory = expandPath(c.TemplateDirectory, homeDir)
 	}
+
+	c.RepoDir = fmt.Sprintf("%s-%s", c.Service, c.Release)
+
+	var str string
+
+	str, err = renderStr(c.TemplateDirectory, &c)
+	if err != nil {
+		return nil, err
+	}
+	c.TemplateDirectory = str
+
+	str, err = renderStr(c.CommitMessage, &c)
+	if err != nil {
+		return nil, err
+	}
+	c.CommitMessage = str
 
 	return &c, nil
 }

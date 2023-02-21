@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 
+	"ferlab/ferlease/git"
 	"ferlab/ferlease/kustomization"
 	"github.com/spf13/cobra"
 )
@@ -16,16 +17,19 @@ func generateReleaseCmd(cmdVars *CmdVars) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			orchest := cmdVars.Orchest
 			conf := cmdVars.Conf
+			repo := cmdVars.Repo
+
+			commitList := []string{}
 
 			var wErr error
-			repoPath := GetRepoPath(conf)
 
 			fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
-			fluxcdFilePath := path.Join(repoPath, orchest.FsConventions.FluxcdDir, fluxcdFileName)
+			fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)
 			wErr = WriteOnFile(fluxcdFilePath, orchest.FluxcdFile)
 			AbortOnErr(wErr)
+			commitList = append(commitList, PathRelativeToRepo(fluxcdFilePath, conf.RepoDir))
 
-			kusPath := path.Join(repoPath, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
+			kusPath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
 			kus, kusErr := kustomization.GetKustomization(kusPath)
 			AbortOnErr(kusErr)
 
@@ -34,15 +38,24 @@ func generateReleaseCmd(cmdVars *CmdVars) *cobra.Command {
 			AbortOnErr(rendErr)
 			wErr = WriteOnFile(kusPath, rend)
 			AbortOnErr(wErr)
+			commitList = append(commitList, PathRelativeToRepo(kusPath, conf.RepoDir))
 
 			for fName, fValue := range orchest.AppFiles {
-				fPath := path.Join(repoPath, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
+				fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
 				
 				mkErr := os.MkdirAll(path.Dir(fPath), 0700)
 				AbortOnErr(mkErr)
 				
 				wErr = WriteOnFile(fPath, fValue)
 				AbortOnErr(wErr)
+				commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+			}
+
+			changes, comErr := git.CommitFiles(repo, commitList, conf.CommitMessage)
+			AbortOnErr(comErr)
+
+			if !changes {
+				return
 			}
 		},
 	}
