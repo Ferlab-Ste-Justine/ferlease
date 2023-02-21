@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	gogit "github.com/go-git/go-git/v5"
+	gogitconf "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
@@ -161,7 +163,7 @@ func CommitFiles(repo *gogit.Repository, files []string, msg string) (bool, erro
 	}
 
 	if len(stat) == 0 {
-		fmt.Print("Will not commit as there are no changes to commit.")
+		fmt.Println("Will not commit as there are no changes to commit.")
 		return false, nil
 	}
 
@@ -170,5 +172,43 @@ func CommitFiles(repo *gogit.Repository, files []string, msg string) (bool, erro
 		return false, errors.New(fmt.Sprintf("Error commiting file changes: %s", commErr.Error()))
 	}
 
+	fmt.Printf("Committed following changes with message \"%s\": \n%s\n", msg, stat.String())
+
 	return true, nil
+}
+
+type PushPreHook func() (*gogit.Repository, error)
+
+func PushChanges(hook PushPreHook, ref string, retries int64, retryInterval time.Duration) error {
+	repo, hookErr := hook()
+	if hookErr != nil {
+		return hookErr
+	}
+
+	refMap := gogitconf.RefSpec(fmt.Sprintf("%s:%s", ref, ref))
+	pushErr := repo.Push(&gogit.PushOptions{
+		Force: false,
+		Prune: false,
+		RefSpecs: []gogitconf.RefSpec{refMap},
+	})
+
+	if pushErr != nil {
+		if pushErr.Error() == gogit.NoErrAlreadyUpToDate.Error() {
+			fmt.Println("Push operation was no-op as remote was already up to date.")
+			return nil
+		}
+
+		if pushErr.Error() == gogit.ErrForceNeeded.Error() {
+			if retries == 0 {
+				return errors.New(fmt.Sprintf("Push operation continuously failed due to remove updates. Giving up."))
+			}
+			
+			fmt.Println("Push operation failed as remote was updated with non-local commits. Will retry.")
+			time.Sleep(retryInterval)
+
+			return PushChanges(hook, ref, retries - 1, retryInterval)
+		}
+	}
+
+	return nil
 }

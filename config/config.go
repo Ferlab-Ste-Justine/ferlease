@@ -17,7 +17,7 @@ type Config struct {
 	Release           string
 	Repo              string
 	RepoDir           string `yaml:"-"`
-	RepoBranch        string `yaml:"repo_branch"`
+	Ref               string `yaml:"ref"`
 	GitSshKey         string `yaml:"git_ssh_key"`
 	GitKnownKey       string `yaml:"git_known_key"`
 	TemplateDirectory string `yaml:"template_directory"`

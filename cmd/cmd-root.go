@@ -35,7 +35,7 @@ func generateRootCmd() *cobra.Command {
 				AbortOnErr(err)
 			}
 
-			repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.RepoBranch, conf.GitSshKey, conf.GitKnownKey)
+			repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, conf.GitSshKey, conf.GitKnownKey)
 			AbortOnErr(repErr)
 
 			tmpl := template.TemplateParameters{

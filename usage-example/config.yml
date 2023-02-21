@@ -1,7 +1,7 @@
 service: hello-world
 release: "test"
 repo: "git@github.com:Magnitus-/ferlease-playground.git"
-repo_branch: main
+ref: main
 git_ssh_key: "~/.ssh/id_rsa"
 git_known_key: "known_host"
 template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}"
