@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func generateTeardownCmd(cmdVars *CmdVars) *cobra.Command {
+func generateTeardownCmd(confPath *string) *cobra.Command {
 	var teardownCmd = &cobra.Command{
 		Use:   "teardown",
 		Short: "teardown a release in fluxcd gitops orchestration",

@@ -6,3 +6,5 @@ git_ssh_key: "~/.ssh/id_rsa"
 git_known_key: "known_host"
 template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}"
 commit_message: "Releasing release {{.Release}} of service {{.Service}}"
+push_retries: 60
+push_retry_interval: "5s"

@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path"
+
+	"ferlab/ferlease/config"
+	"ferlab/ferlease/git"
+	"ferlab/ferlease/template"
+	gogit "github.com/go-git/go-git/v5"
 )
 
 func AbortOnErr(err error) {
@@ -55,4 +60,26 @@ func PathRelativeToRepo(fPath string, repo string) string {
 	}
 
 	return relative
+}
+
+func SetupWorkEnv(conf *config.Config) (*gogit.Repository, *template.Orchestration) {
+	exists, existsErr := PathExists(conf.RepoDir)
+	AbortOnErr(existsErr)
+
+	if exists {
+		err := os.RemoveAll(conf.RepoDir)
+		AbortOnErr(err)
+	}
+
+	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, conf.GitSshKey, conf.GitKnownKey)
+	AbortOnErr(repErr)
+
+	tmpl := template.TemplateParameters{
+		Service: conf.Service,
+		Release: conf.Release,
+	}
+	orchest, orchErr := template.LoadTemplate(conf.TemplateDirectory, &tmpl)
+	AbortOnErr(orchErr)
+
+	return repo, orchest
 }

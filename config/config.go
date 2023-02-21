@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 	"text/template"
+	"time"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -16,12 +17,14 @@ type Config struct {
 	Service           string
 	Release           string
 	Repo              string
-	RepoDir           string `yaml:"-"`
-	Ref               string `yaml:"ref"`
-	GitSshKey         string `yaml:"git_ssh_key"`
-	GitKnownKey       string `yaml:"git_known_key"`
-	TemplateDirectory string `yaml:"template_directory"`
-	CommitMessage     string `yaml:"commit_message"`
+	RepoDir           string        `yaml:"-"`
+	Ref               string        `yaml:"ref"`
+	GitSshKey         string        `yaml:"git_ssh_key"`
+	GitKnownKey       string        `yaml:"git_known_key"`
+	TemplateDirectory string        `yaml:"template_directory"`
+	CommitMessage     string        `yaml:"commit_message"`
+	PushRetries       int64         `yaml:"push_retries"`
+	PushRetryInterval time.Duration `yaml:"push_retry_interval"`
 }
 
 func renderStr(s string, c *Config) (string, error) {

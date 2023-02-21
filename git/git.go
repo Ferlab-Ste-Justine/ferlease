@@ -179,16 +179,22 @@ func CommitFiles(repo *gogit.Repository, files []string, msg string) (bool, erro
 
 type PushPreHook func() (*gogit.Repository, error)
 
-func PushChanges(hook PushPreHook, ref string, retries int64, retryInterval time.Duration) error {
+func PushChanges(hook PushPreHook, ref string, retries int64, retryInterval time.Duration) error {	
 	repo, hookErr := hook()
 	if hookErr != nil {
 		return hookErr
 	}
 
-	refMap := gogitconf.RefSpec(fmt.Sprintf("%s:%s", ref, ref))
+	//Repo object is nil, indicating there is nothing to push
+	if repo == nil {
+		return nil
+	}
+
+	refMap := gogitconf.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", ref, ref))
 	pushErr := repo.Push(&gogit.PushOptions{
 		Force: false,
 		Prune: false,
+		RemoteName: "origin",
 		RefSpecs: []gogitconf.RefSpec{refMap},
 	})
 
@@ -200,7 +206,7 @@ func PushChanges(hook PushPreHook, ref string, retries int64, retryInterval time
 
 		if pushErr.Error() == gogit.ErrForceNeeded.Error() {
 			if retries == 0 {
-				return errors.New(fmt.Sprintf("Push operation continuously failed due to remove updates. Giving up."))
+				return errors.New(fmt.Sprintf("Push operation continuously failed due to remote updates. Giving up."))
 			}
 			
 			fmt.Println("Push operation failed as remote was updated with non-local commits. Will retry.")
