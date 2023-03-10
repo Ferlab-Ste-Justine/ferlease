@@ -4,5 +4,4 @@ kind: {{.Kind}}
 {{if .Namespace}}namespace: {{.Namespace}} {{end}}
 
 resources: {{range .Resources}}
-  - {{.}}
-{{end}}
+  - {{.}}{{end}}
