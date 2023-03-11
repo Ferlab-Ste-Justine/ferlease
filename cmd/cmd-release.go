@@ -18,7 +18,7 @@ func generateReleaseCmd(confPath *string) *cobra.Command {
 		Use:   "release",
 		Short: "Release a new release in fluxcd gitops orchestration",
 		Run: func(cmd *cobra.Command, args []string) {
-			conf, err := config.GetConfig(*confPath)
+			conf, err := config.GetConfig(*confPath, "release")
 			AbortOnErr(err)
 			
 			git.PushChanges(func() (*gogit.Repository, error) {

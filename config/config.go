@@ -18,6 +18,7 @@ type Config struct {
 	Release           string
 	Repo              string
 	RepoDir           string        `yaml:"-"`
+	Operation         string        `yaml:"-"`
 	Ref               string        `yaml:"ref"`
 	GitSshKey         string        `yaml:"git_ssh_key"`
 	GitKnownKey       string        `yaml:"git_known_key"`
@@ -51,8 +52,9 @@ func expandPath(fpath string, homedir string) string {
 	return fpath
 }
 
-func GetConfig(path string) (*Config, error) {
+func GetConfig(path string, operation string) (*Config, error) {
 	var c Config
+	c.Operation = operation
 
 	b, err := ioutil.ReadFile(path)
 	if err != nil {

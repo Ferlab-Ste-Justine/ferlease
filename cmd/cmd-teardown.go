@@ -18,7 +18,7 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 		Use:   "teardown",
 		Short: "teardown a release in fluxcd gitops orchestration",
 		Run: func(cmd *cobra.Command, args []string) {
-			conf, err := config.GetConfig(*confPath)
+			conf, err := config.GetConfig(*confPath, "teardown")
 			AbortOnErr(err)
 
 			git.PushChanges(func() (*gogit.Repository, error) {

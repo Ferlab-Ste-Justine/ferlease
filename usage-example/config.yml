@@ -5,6 +5,6 @@ ref: main
 git_ssh_key: "~/.ssh/id_rsa"
 git_known_key: "known_host"
 template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}"
-commit_message: "Releasing release {{.Release}} of service {{.Service}}"
+commit_message: "{{ if eq .Operation \"release\" }}Adding{{ else }}Removing{{ end }} release {{.Release}} of service {{.Service}}"
 push_retries: 60
 push_retry_interval: "5s"
