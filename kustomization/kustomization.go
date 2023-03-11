@@ -32,6 +32,15 @@ func (k *Kustomization) AddResource(resource string) {
 	sort.Strings(k.Resources)
 }
 
+func (k *Kustomization) RemoveResource(resource string) {
+	for idx, r := range k.Resources {
+		if r == resource {
+			k.Resources = append(k.Resources[:idx], k.Resources[idx + 1:]...)
+			break
+		}
+	}
+}
+
 func (k *Kustomization) Render() (string, error) {
 	tmpl, tErr := template.New("template").Parse(kustomizationTemplate)
 	if tErr != nil {
