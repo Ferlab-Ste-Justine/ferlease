@@ -14,12 +14,13 @@ import (
 )
 
 type Config struct {
+	Operation         string        `yaml:"-"`
 	Service           string
 	Release           string
+	Environment       string
 	Repo              string
 	RepoDir           string        `yaml:"-"`
-	Operation         string        `yaml:"-"`
-	Ref               string        `yaml:"ref"`
+	Ref               string
 	GitSshKey         string        `yaml:"git_ssh_key"`
 	GitKnownKey       string        `yaml:"git_known_key"`
 	TemplateDirectory string        `yaml:"template_directory"`

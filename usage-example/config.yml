@@ -1,5 +1,6 @@
 service: hello-world
 release: "test"
+environment: "qa"
 repo: "git@github.com:Magnitus-/ferlease-playground.git"
 ref: main
 git_ssh_key: "~/.ssh/id_rsa"

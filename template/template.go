@@ -12,8 +12,9 @@ import (
 )
 
 type TemplateParameters struct {
-	Service string
-	Release string
+	Service     string
+	Release     string
+	Environment string
 }
 
 type FsConventions struct {

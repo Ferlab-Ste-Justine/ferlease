@@ -75,8 +75,9 @@ func SetupWorkEnv(conf *config.Config) (*gogit.Repository, *template.Orchestrati
 	AbortOnErr(repErr)
 
 	tmpl := template.TemplateParameters{
-		Service: conf.Service,
-		Release: conf.Release,
+		Service:     conf.Service,
+		Release:     conf.Release,
+		Environment: conf.Environment,
 	}
 	orchest, orchErr := template.LoadTemplate(conf.TemplateDirectory, &tmpl)
 	AbortOnErr(orchErr)
