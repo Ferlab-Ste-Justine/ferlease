@@ -6,7 +6,7 @@ This client is meant to add and remove several concurrent versions of the same f
 
 ## Playground Repo
 
-As you are reading this documentation, refer to the followin resources for an playground that can be experimented with when discovering this project:
+As you are reading this documentation, refer to the followin resources for a playground that can be experimented with when discovering this project:
 - **Playground repo**: https://github.com/Ferlab-Ste-Justine/ferlease-playground
 - **Configuration example**: https://github.com/Ferlab-Ste-Justine/ferlease/tree/main/usage-example
 
@@ -31,12 +31,12 @@ Currently, the following variables are supported in the template:
 - **Environment**: Environment to deploy the release in (ex: **qa**)
 
 The template directory should contain the following components:
-- **app**: Directory that should contain the templatized orchestration files for your services
+- **app**: Directory that should contain the templatized orchestration files for your service
 - **fluxcd.yml**: Templatized orchestration file for the fluxcd resources that will manage your service
-- **filesystem-conventions.yml**: Templatized specification that tells ferlease how to name the files it will generate and where to place them. It contains the following keys:
+- **filesystem-conventions.yml**: Templatized convention file that tells ferlease how to name the files it will generate and where to place them. It contains the following keys:
   - **naming**: What name to give to the **app** directory and to the fluxcd orchestration file.
-  - **fluxcd_directory**: Directory where it should place the fluxcd orchestration file (named according to the **naming** configuration). The file will be added to the resources of a pre-existing **kustomization.yaml** file in that directory.
-  - **apps_directory**: Directory containing apps under which it will place the **app** directory (named according to the **naming** configuration)
+  - **fluxcd_directory**: Directory where it should place the fluxcd orchestration file. The file will be added to the resources of a pre-existing **kustomization.yaml** file in that directory.
+  - **apps_directory**: Directory containing apps under which it will place the **app** directory
 
 ## Commands
 
@@ -48,9 +48,9 @@ Additionally, the location of the configuration file can be specified using a **
 
 ## Configuration File
 
-Configuration file for ferlease.
+ferlease expects a configuration file that specifies how it should behave.
 
-Some configuration properties can be templatized (as specified) with the same parameters the template supports (**Service**, **Release**, **Environment**) in addition to the following parameters:
+Some configuration properties can be templatized (as specified in the properties' description) with the same parameters the template supports (**Service**, **Release**, **Environment**) in addition to the following parameters:
 - **RepoDir**: Path of the directory where ferlease will have cloned the git repo to operate in, determined at runtime
 - **Operation**: Operation that ferlease is performing. Can be either **release** or **teardown**.
 
