@@ -6,10 +6,10 @@ import (
 	"path"
 
 	"ferlab/ferlease/config"
-	"ferlab/ferlease/git"
 	"ferlab/ferlease/kustomization"
-	"github.com/spf13/cobra"
 
+	git "github.com/Ferlab-Ste-Justine/git-sdk"
+	"github.com/spf13/cobra"
 	gogit "github.com/go-git/go-git/v5"
 )
 
@@ -21,7 +21,7 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 			conf, err := config.GetConfig(*confPath, "teardown")
 			AbortOnErr(err)
 
-			git.PushChanges(func() (*gogit.Repository, error) {
+			err = git.PushChanges(func() (*gogit.Repository, error) {
 				commitList := []string{}
 				
 				repo, orchest := SetupWorkEnv(conf)
@@ -61,6 +61,7 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 
 				return repo, nil
 			}, conf.Ref, conf.PushRetries, conf.PushRetryInterval)
+			AbortOnErr(err)
 		},
 	}
 

@@ -6,8 +6,9 @@ import (
 	"path"
 
 	"ferlab/ferlease/config"
-	"ferlab/ferlease/git"
 	"ferlab/ferlease/template"
+
+    git "github.com/Ferlab-Ste-Justine/git-sdk"
 	gogit "github.com/go-git/go-git/v5"
 )
 
