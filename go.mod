@@ -3,7 +3,7 @@ module ferlab/ferlease
 go 1.18
 
 require (
-	github.com/Ferlab-Ste-Justine/git-sdk v0.1.0
+	github.com/Ferlab-Ste-Justine/git-sdk v0.2.0
 	github.com/go-git/go-git/v5 v5.6.0
 	github.com/spf13/cobra v1.6.1
 	gopkg.in/yaml.v2 v2.4.0

@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 
 	"ferlab/ferlease/config"
 	"ferlab/ferlease/template"
@@ -63,6 +66,34 @@ func PathRelativeToRepo(fPath string, repo string) string {
 	return relative
 }
 
+func VerifyRepoSignatures(repo *gogit.Repository, signaturesPath string) error {
+	keys := []string{}
+	err := filepath.Walk(signaturesPath, func(fPath string, fInfo fs.FileInfo, fErr error) error {
+		if fErr != nil {
+			return fErr
+		}
+
+		if fInfo.IsDir() {
+			return nil
+		}
+
+		key, keyErr := os.ReadFile(fPath)
+		if keyErr != nil {
+			return errors.New(fmt.Sprintf("Error reading accepted signature: %s", keyErr.Error()))
+		}
+
+		keys = append(keys, string(key))
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return git.VerifyTopCommit(repo, keys)
+}
+
 func SetupWorkEnv(conf *config.Config) (*gogit.Repository, *template.Orchestration) {
 	exists, existsErr := PathExists(conf.RepoDir)
 	AbortOnErr(existsErr)
@@ -72,8 +103,13 @@ func SetupWorkEnv(conf *config.Config) (*gogit.Repository, *template.Orchestrati
 		AbortOnErr(err)
 	}
 
-	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, conf.GitSshKey, conf.GitKnownKey)
+	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, conf.GitAuth.SshKey, conf.GitAuth.KnownKey)
 	AbortOnErr(repErr)
+
+	if conf.AcceptedSignatures != "" {
+		verifyErr := VerifyRepoSignatures(repo, conf.AcceptedSignatures)
+		AbortOnErr(verifyErr)
+	}
 
 	tmpl := template.TemplateParameters{
 		Service:     conf.Service,

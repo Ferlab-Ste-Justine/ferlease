@@ -56,7 +56,17 @@ func generateReleaseCmd(confPath *string) *cobra.Command {
 					commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
 				}
 	
-				changes, comErr := git.CommitFiles(repo, commitList, conf.CommitMessage)
+				changes, comErr := git.CommitFiles(
+					repo, 
+					commitList, 
+					conf.CommitMessage,
+					git.CommitOptions{
+						Name: conf.Author.Name,
+						Email: conf.Author.Email,
+						SignKeyPath: conf.CommitSignature.Key,
+						PassphrasePath: conf.CommitSignature.Passphrase,
+					},
+				)
 				AbortOnErr(comErr)
 	
 				if !changes {

@@ -13,20 +13,42 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+type CommiterConfig struct {
+	Name  string
+	Email string
+}
+
+type AuthorConfig struct {
+	Name  string
+	Email string
+}
+
+type CommitSignatureConfig struct {
+	Key        string
+	Passphrase string
+}
+
+type GitAuthConfig struct {
+	SshKey   string `yaml:"ssh_key"`
+    KnownKey string `yaml:"known_key"`
+}
+
 type Config struct {
-	Operation         string        `yaml:"-"`
-	Service           string
-	Release           string
-	Environment       string
-	Repo              string
-	RepoDir           string        `yaml:"-"`
-	Ref               string
-	GitSshKey         string        `yaml:"git_ssh_key"`
-	GitKnownKey       string        `yaml:"git_known_key"`
-	TemplateDirectory string        `yaml:"template_directory"`
-	CommitMessage     string        `yaml:"commit_message"`
-	PushRetries       int64         `yaml:"push_retries"`
-	PushRetryInterval time.Duration `yaml:"push_retry_interval"`
+	Operation          string                `yaml:"-"`
+	Service            string
+	Release            string
+	Environment        string
+	Repo               string
+	RepoDir            string                `yaml:"-"`
+	Ref                string
+	GitAuth            GitAuthConfig         `yaml:"git_auth"`
+	Author             AuthorConfig
+	CommitSignature    CommitSignatureConfig `yaml:"commit_signature"`
+	AcceptedSignatures string                `yaml:"accepted_signatures"`
+	TemplateDirectory  string                `yaml:"template_directory"`
+	CommitMessage      string                `yaml:"commit_message"`
+	PushRetries        int64                 `yaml:"push_retries"`
+	PushRetryInterval  time.Duration         `yaml:"push_retry_interval"`
 }
 
 func renderStr(s string, c *Config) (string, error) {
@@ -68,8 +90,8 @@ func GetConfig(path string, operation string) (*Config, error) {
 
 	homeDir, homeDirErr := os.UserHomeDir()
 	if homeDirErr == nil {
-		c.GitSshKey = expandPath(c.GitSshKey, homeDir)
-		c.GitKnownKey = expandPath(c.GitKnownKey, homeDir)
+		c.GitAuth.SshKey = expandPath(c.GitAuth.SshKey, homeDir)
+		c.GitAuth.KnownKey = expandPath(c.GitAuth.KnownKey, homeDir)
 		c.TemplateDirectory = expandPath(c.TemplateDirectory, homeDir)
 	}
 

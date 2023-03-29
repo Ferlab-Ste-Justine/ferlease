@@ -1,5 +1,5 @@
-github.com/Ferlab-Ste-Justine/git-sdk v0.1.0 h1:LbmtaxdQZGJ8zgzmMhoAO1DFeVCfdsv0eDhthVyK92E=
-github.com/Ferlab-Ste-Justine/git-sdk v0.1.0/go.mod h1:8AL/2ZprgD+JPxHp/ROkYnHB7Qak/ZDaL5TUidpLfKA=
+github.com/Ferlab-Ste-Justine/git-sdk v0.2.0 h1:Am5zKdA2p7hzaHG/irKwLlAwm261EfEyNWcb/1IureU=
+github.com/Ferlab-Ste-Justine/git-sdk v0.2.0/go.mod h1:8AL/2ZprgD+JPxHp/ROkYnHB7Qak/ZDaL5TUidpLfKA=
 github.com/Microsoft/go-winio v0.5.2 h1:a9IhgEQBCUEk6QCdml9CiJGhAws+YwffDHEMp1VMrpA=
 github.com/Microsoft/go-winio v0.5.2/go.mod h1:WpS1mjBmmwHBEWmogvA2mj8546UReBk4v8QkMxJ6pZY=
 github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4 h1:ra2OtmuW0AE5csawV4YXMNGNQQXvLRps3z2Z59OPO+I=

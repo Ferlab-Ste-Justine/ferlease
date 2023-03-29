@@ -60,8 +60,16 @@ The configuration file should be in yaml and is expected to have the following p
 - **environment**: Environment to manage the release in
 - **repo**: Url of the git repo to operate on
 - **ref**: Branch of the git repo to operate on
-- **git_ssh_key**: Ssh key to use to authentify with the git server. It should be the path to a file containing the key, not the key itself.
-- **git_known_key**: Path to a file containing the git server's ssh fingerprint. Used to authentify the server.
+- **git_auth**: Git authentication. It has the following keys:
+  - **ssh_key**: Ssh key to use to authentify with the git server. It should be the path to a file containing the key, not the key itself.
+  - **known_key**: Path to a file containing the git server's ssh fingerprint. Used to authentify the server.
+- **author**: Author information for the git commit. It has the following keys:
+  - **name**: Name of the author
+  - **email**: Email of the author
+- **commit_signature**: Path to gpg private key and its passphrase to sign commits. It has the following keys:
+  - **key**: Path to a file containing the private key that will sign the commit
+  - **passphrase**: Path to a file container the secret passphrase to decrypt the private key
+- **accepted_signatures**: Path to a directory containing the gpg public keys of all authorized signers for the repo
 - **template_directory**: Path to the directory containing the release's template. This property can be templatized.
 - **commit_message**: Content of the commit message. This property can be templatized.
 - **push_retries**: In the unlikely even that a barrage of upstream commits keep blocking a gitops operation, how many times to retry before giving up.
