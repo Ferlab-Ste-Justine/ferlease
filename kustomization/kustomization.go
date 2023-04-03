@@ -15,7 +15,7 @@ var (
 )
 
 type Kustomization struct {
-	ApiVersion string
+	ApiVersion string    `yaml:"apiVersion"`
 	Kind       string
 	Namespace  string
 	Resources  []string
