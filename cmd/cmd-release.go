@@ -10,7 +10,6 @@ import (
 
 	git "github.com/Ferlab-Ste-Justine/git-sdk"
 	"github.com/spf13/cobra"
-	gogit "github.com/go-git/go-git/v5"
 )
 
 func generateReleaseCmd(confPath *string) *cobra.Command {
@@ -20,9 +19,12 @@ func generateReleaseCmd(confPath *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			conf, err := config.GetConfig(*confPath, "release")
 			AbortOnErr(err)
-			
-			err = git.PushChanges(func() (*gogit.Repository, error) {
-				repo, orchest := SetupWorkEnv(conf)
+
+			sshCreds, sshCredsErr := git.GetSshCredentials(conf.GitAuth.SshKey, conf.GitAuth.KnownKey)
+			AbortOnErr(sshCredsErr)
+
+			err = git.PushChanges(func() (*git.GitRepository, error) {
+				repo, orchest := SetupWorkEnv(conf, sshCreds)
 
 				commitList := []string{}
 	
@@ -56,6 +58,13 @@ func generateReleaseCmd(confPath *string) *cobra.Command {
 					commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
 				}
 	
+				var signature *git.CommitSignatureKey
+				var signatureErr error
+				if conf.CommitSignature.Key != "" {
+					signature, signatureErr = git.GetSignatureKey(conf.CommitSignature.Key, conf.CommitSignature.Passphrase)
+					AbortOnErr(signatureErr)
+				}
+
 				changes, comErr := git.CommitFiles(
 					repo, 
 					commitList, 
@@ -63,8 +72,7 @@ func generateReleaseCmd(confPath *string) *cobra.Command {
 					git.CommitOptions{
 						Name: conf.Author.Name,
 						Email: conf.Author.Email,
-						SignKeyPath: conf.CommitSignature.Key,
-						PassphrasePath: conf.CommitSignature.Passphrase,
+						SignatureKey: signature,
 					},
 				)
 				AbortOnErr(comErr)
@@ -74,7 +82,7 @@ func generateReleaseCmd(confPath *string) *cobra.Command {
 				}
 
 				return repo, nil
-			}, conf.Ref, conf.PushRetries, conf.PushRetryInterval)
+			}, conf.Ref, sshCreds, conf.PushRetries, conf.PushRetryInterval)
 			AbortOnErr(err)
 		},
 	}

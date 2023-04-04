@@ -12,7 +12,6 @@ import (
 	"ferlab/ferlease/template"
 
     git "github.com/Ferlab-Ste-Justine/git-sdk"
-	gogit "github.com/go-git/go-git/v5"
 )
 
 func AbortOnErr(err error) {
@@ -66,7 +65,7 @@ func PathRelativeToRepo(fPath string, repo string) string {
 	return relative
 }
 
-func VerifyRepoSignatures(repo *gogit.Repository, signaturesPath string) error {
+func VerifyRepoSignatures(repo *git.GitRepository, signaturesPath string) error {
 	keys := []string{}
 	err := filepath.Walk(signaturesPath, func(fPath string, fInfo fs.FileInfo, fErr error) error {
 		if fErr != nil {
@@ -94,7 +93,7 @@ func VerifyRepoSignatures(repo *gogit.Repository, signaturesPath string) error {
 	return git.VerifyTopCommit(repo, keys)
 }
 
-func SetupWorkEnv(conf *config.Config) (*gogit.Repository, *template.Orchestration) {
+func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *template.Orchestration) {
 	exists, existsErr := PathExists(conf.RepoDir)
 	AbortOnErr(existsErr)
 
@@ -103,7 +102,7 @@ func SetupWorkEnv(conf *config.Config) (*gogit.Repository, *template.Orchestrati
 		AbortOnErr(err)
 	}
 
-	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, conf.GitAuth.SshKey, conf.GitAuth.KnownKey)
+	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, sshCreds)
 	AbortOnErr(repErr)
 
 	if conf.AcceptedSignatures != "" {
