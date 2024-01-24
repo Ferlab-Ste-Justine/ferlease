@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/Ferlab-Ste-Justine/ferlease/config"
-	"github.com/Ferlab-Ste-Justine/ferlease/template"
+	"github.com/Ferlab-Ste-Justine/ferlease/fluxcd"
 	"github.com/Ferlab-Ste-Justine/ferlease/tplcore"
 
     git "github.com/Ferlab-Ste-Justine/git-sdk"
@@ -94,7 +94,7 @@ func VerifyRepoSignatures(repo *git.GitRepository, signaturesPath string) error 
 	return git.VerifyTopCommit(repo, keys)
 }
 
-func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *template.Orchestration) {
+func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
 	exists, existsErr := PathExists(conf.RepoDir)
 	AbortOnErr(existsErr)
 
@@ -117,7 +117,7 @@ func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRe
 		Environment:  conf.Environment,
 		CustomParams: conf.CustomParams,
 	}
-	orchest, orchErr := template.LoadTemplate(conf.TemplateDirectory, &tmpl)
+	orchest, orchErr := fluxcd.LoadTemplate(conf.TemplateDirectory, &tmpl)
 	AbortOnErr(orchErr)
 
 	return repo, orchest
