@@ -5,8 +5,8 @@ import (
 	"os"
 	"path"
 
-	"ferlab/ferlease/config"
-	"ferlab/ferlease/kustomization"
+	"github.com/Ferlab-Ste-Justine/ferlease/config"
+	"github.com/Ferlab-Ste-Justine/ferlease/kustomization"
 
 	git "github.com/Ferlab-Ste-Justine/git-sdk"
 	"github.com/spf13/cobra"

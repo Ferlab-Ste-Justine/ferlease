@@ -8,8 +8,9 @@ import (
 	"path"
 	"path/filepath"
 
-	"ferlab/ferlease/config"
-	"ferlab/ferlease/template"
+	"github.com/Ferlab-Ste-Justine/ferlease/config"
+	"github.com/Ferlab-Ste-Justine/ferlease/template"
+	"github.com/Ferlab-Ste-Justine/ferlease/tplcore"
 
     git "github.com/Ferlab-Ste-Justine/git-sdk"
 )
@@ -110,10 +111,11 @@ func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRe
 		AbortOnErr(verifyErr)
 	}
 
-	tmpl := template.TemplateParameters{
-		Service:     conf.Service,
-		Release:     conf.Release,
-		Environment: conf.Environment,
+	tmpl := tplcore.TemplateParameters{
+		Service:      conf.Service,
+		Release:      conf.Release,
+		Environment:  conf.Environment,
+		CustomParams: conf.CustomParams,
 	}
 	orchest, orchErr := template.LoadTemplate(conf.TemplateDirectory, &tmpl)
 	AbortOnErr(orchErr)

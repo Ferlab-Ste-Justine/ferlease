@@ -1,4 +1,4 @@
-module ferlab/ferlease
+module github.com/Ferlab-Ste-Justine/ferlease
 
 go 1.18
 

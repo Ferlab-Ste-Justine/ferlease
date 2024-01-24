@@ -46,6 +46,7 @@ type Config struct {
 	CommitSignature    CommitSignatureConfig `yaml:"commit_signature"`
 	AcceptedSignatures string                `yaml:"accepted_signatures"`
 	TemplateDirectory  string                `yaml:"template_directory"`
+	CustomParams       map[string]string     `yaml:"custom_parameters"`
 	CommitMessage      string                `yaml:"commit_message"`
 	PushRetries        int64                 `yaml:"push_retries"`
 	PushRetryInterval  time.Duration         `yaml:"push_retry_interval"`

@@ -1,21 +1,11 @@
 package template
 
 import (
-	"bytes"
-	"io/fs"
-	"io/ioutil"
 	"path"
-	"path/filepath"
-	"text/template"
-	"strings"
 	yaml "gopkg.in/yaml.v2"
-)
 
-type TemplateParameters struct {
-	Service     string
-	Release     string
-	Environment string
-}
+	"github.com/Ferlab-Ste-Justine/ferlease/tplcore"
+)
 
 type FsConventions struct {
 	Naming    string
@@ -29,30 +19,10 @@ type Orchestration struct {
 	AppFiles      map[string]string
 }
 
-func applyFile(fPath string, params *TemplateParameters) ([]byte, error) {
-	f, err := ioutil.ReadFile(fPath)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	tmpl, tErr := template.New("template").Parse(string(f))
-	if tErr != nil {
-		return []byte{}, tErr
-	}
-
-	var b bytes.Buffer
-	exErr := tmpl.Execute(&b, params)
-	if exErr != nil {
-		return []byte{}, exErr
-	}
-
-	return b.Bytes(), nil
-}
-
-func loadFsConventions(fPath string, params *TemplateParameters) (*FsConventions, error) {
+func loadFsConventions(fPath string, params *tplcore.TemplateParameters) (*FsConventions, error) {
 	var conv FsConventions
 	
-	res, err := applyFile(path.Join(fPath, "filesystem-conventions.yml"), params)
+	res, err := params.LoadFile(path.Join(fPath, "filesystem-conventions.yml"))
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +35,8 @@ func loadFsConventions(fPath string, params *TemplateParameters) (*FsConventions
 	return &conv, nil
 }
 
-func loadFluxcdFile(fPath string, params *TemplateParameters) (string, error) {
-	res, err := applyFile(path.Join(fPath, "fluxcd.yml"), params)
+func loadFluxcdFile(fPath string, params *tplcore.TemplateParameters) (string, error) {
+	res, err := params.LoadFile(path.Join(fPath, "fluxcd.yml"))
 	if err != nil {
 		return "", err
 	}
@@ -74,33 +44,7 @@ func loadFluxcdFile(fPath string, params *TemplateParameters) (string, error) {
 	return string(res), nil
 }
 
-func loadAppFiles(aPath string, params *TemplateParameters) (map[string]string, error) {
-	dir := path.Join(aPath, "app")
-
-	app := map[string]string{}
-
-	err := filepath.Walk(dir, func(fPath string, fInfo fs.FileInfo, fErr error) error {
-		if fErr != nil {
-			return fErr
-		}
-
-		if fInfo.IsDir() {
-			return nil
-		}
-
-		res, appErr := applyFile(fPath, params)
-		if appErr != nil {
-			return appErr
-		}	
-		app[strings.TrimPrefix(fPath, dir)] = string(res)
-
-		return nil
-	})
-
-	return app, err
-}
-
-func LoadTemplate(tPath string, params *TemplateParameters) (*Orchestration, error) {
+func LoadTemplate(tPath string, params *tplcore.TemplateParameters) (*Orchestration, error) {
 	var o Orchestration
 
 	var fsCoErr error
@@ -116,7 +60,7 @@ func LoadTemplate(tPath string, params *TemplateParameters) (*Orchestration, err
 	}
 
 	var appFlsErr error
-	o.AppFiles, appFlsErr = loadAppFiles(tPath, params)
+	o.AppFiles, appFlsErr = params.LoadDir(tPath)
 	if appFlsErr != nil {
 		return nil, appFlsErr
 	}
