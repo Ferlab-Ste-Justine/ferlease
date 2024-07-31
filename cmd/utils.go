@@ -10,6 +10,7 @@ import (
 
 	"github.com/Ferlab-Ste-Justine/ferlease/config"
 	"github.com/Ferlab-Ste-Justine/ferlease/fluxcd"
+	"github.com/Ferlab-Ste-Justine/ferlease/kustomization"
 	"github.com/Ferlab-Ste-Justine/ferlease/tplcore"
 
     git "github.com/Ferlab-Ste-Justine/git-sdk"
@@ -121,4 +122,72 @@ func SetupFluxcdWorkEnv(confOrch *config.Orchestration, conf *config.Config, ssh
 	AbortOnErr(orchErr)
 
 	return repo, orchest
+}
+
+func ApplyFluxcdOrch(orchest *fluxcd.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+		
+	var wErr error
+
+	fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
+	fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)
+	wErr = WriteOnFile(fluxcdFilePath, orchest.FluxcdFile)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(fluxcdFilePath, conf.RepoDir))
+
+	kusPath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
+	kus, kusErr := kustomization.GetKustomization(kusPath)
+	AbortOnErr(kusErr)
+
+	kus.AddResource(fluxcdFileName)
+	rend, rendErr := kus.Render()
+	AbortOnErr(rendErr)
+	wErr = WriteOnFile(kusPath, rend)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(kusPath, conf.RepoDir))
+
+	for fName, fValue := range orchest.AppFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
+		
+		mkErr := os.MkdirAll(path.Dir(fPath), 0700)
+		AbortOnErr(mkErr)
+		
+		wErr = WriteOnFile(fPath, fValue)
+		AbortOnErr(wErr)
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
+}
+
+func RemoveFluxcdOrch(orchest *fluxcd.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+
+	fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
+	fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)
+	rmErr := os.Remove(fluxcdFilePath)
+	AbortOnErr(rmErr)
+	commitList = append(commitList, PathRelativeToRepo(fluxcdFilePath, conf.RepoDir))
+
+	kusPath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
+	kus, kusErr := kustomization.GetKustomization(kusPath)
+	AbortOnErr(kusErr)
+
+	kus.RemoveResource(fluxcdFileName)
+	rend, rendErr := kus.Render()
+	AbortOnErr(rendErr)
+	wErr := WriteOnFile(kusPath, rend)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(kusPath, conf.RepoDir))
+
+	for fName, _ := range orchest.AppFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
+		
+		rmErr := os.Remove(fPath)
+		AbortOnErr(rmErr)
+
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
 }

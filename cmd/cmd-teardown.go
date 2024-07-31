@@ -1,12 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"path"
-
 	"github.com/Ferlab-Ste-Justine/ferlease/config"
-	"github.com/Ferlab-Ste-Justine/ferlease/kustomization"
 
 	git "github.com/Ferlab-Ste-Justine/git-sdk"
 	"github.com/spf13/cobra"
@@ -24,36 +19,10 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 				sshCreds, sshCredsErr := git.GetSshCredentials(confOrch.GitAuth.SshKey, confOrch.GitAuth.KnownKey)
 				AbortOnErr(sshCredsErr)
 	
-				err = git.PushChanges(func() (*git.GitRepository, error) {
-					commitList := []string{}
-					
+				err = git.PushChanges(func() (*git.GitRepository, error) {					
 					repo, orchest := SetupFluxcdWorkEnv(&confOrch, conf, sshCreds)
 					
-					fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
-					fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)
-					rmErr := os.Remove(fluxcdFilePath)
-					AbortOnErr(rmErr)
-					commitList = append(commitList, PathRelativeToRepo(fluxcdFilePath, conf.RepoDir))
-	
-					kusPath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
-					kus, kusErr := kustomization.GetKustomization(kusPath)
-					AbortOnErr(kusErr)
-	
-					kus.RemoveResource(fluxcdFileName)
-					rend, rendErr := kus.Render()
-					AbortOnErr(rendErr)
-					wErr := WriteOnFile(kusPath, rend)
-					AbortOnErr(wErr)
-					commitList = append(commitList, PathRelativeToRepo(kusPath, conf.RepoDir))
-	
-					for fName, _ := range orchest.AppFiles {
-						fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
-						
-						rmErr := os.Remove(fPath)
-						AbortOnErr(rmErr)
-	
-						commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
-					}
+					commitList := RemoveFluxcdOrch(orchest, conf)
 	
 					var signature *git.CommitSignatureKey
 					var signatureErr error
