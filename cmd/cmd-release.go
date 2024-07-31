@@ -24,7 +24,7 @@ func generateReleaseCmd(confPath *string) *cobra.Command {
 			AbortOnErr(sshCredsErr)
 
 			err = git.PushChanges(func() (*git.GitRepository, error) {
-				repo, orchest := SetupWorkEnv(conf, sshCreds)
+				repo, orchest := SetupFluxcdWorkEnv(conf, sshCreds)
 
 				commitList := []string{}
 	

@@ -67,7 +67,6 @@ func renderStr(s string, c *Config) (string, error) {
 	return string(b.Bytes()), nil
 }
 
-
 func expandPath(fpath string, homedir string) string {
 	if strings.HasPrefix(fpath, "~/") {
 		fpath = path.Join(homedir, fpath[2:])

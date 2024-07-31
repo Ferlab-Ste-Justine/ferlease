@@ -94,7 +94,7 @@ func VerifyRepoSignatures(repo *git.GitRepository, signaturesPath string) error 
 	return git.VerifyTopCommit(repo, keys)
 }
 
-func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
+func SetupFluxcdWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
 	exists, existsErr := PathExists(conf.RepoDir)
 	AbortOnErr(existsErr)
 

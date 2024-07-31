@@ -26,7 +26,7 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 			err = git.PushChanges(func() (*git.GitRepository, error) {
 				commitList := []string{}
 				
-				repo, orchest := SetupWorkEnv(conf, sshCreds)
+				repo, orchest := SetupFluxcdWorkEnv(conf, sshCreds)
 				
 				fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
 				fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)

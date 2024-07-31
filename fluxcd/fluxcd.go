@@ -22,12 +22,12 @@ type Orchestration struct {
 func loadFsConventions(fPath string, params *tplcore.TemplateParameters) (*FsConventions, error) {
 	var conv FsConventions
 	
-	res, err := params.LoadFile(path.Join(fPath, "filesystem-conventions.yml"))
+	res, err := params.LoadFile(fPath)
 	if err != nil {
 		return nil, err
 	}
 
-	yamlErr := yaml.Unmarshal(res, &conv)
+	yamlErr := yaml.Unmarshal([]byte(res), &conv)
 	if yamlErr != nil {
 		return nil, yamlErr
 	}
@@ -35,32 +35,27 @@ func loadFsConventions(fPath string, params *tplcore.TemplateParameters) (*FsCon
 	return &conv, nil
 }
 
-func loadFluxcdFile(fPath string, params *tplcore.TemplateParameters) (string, error) {
-	res, err := params.LoadFile(path.Join(fPath, "fluxcd.yml"))
-	if err != nil {
-		return "", err
-	}
-
-	return string(res), nil
-}
-
 func LoadTemplate(tPath string, params *tplcore.TemplateParameters) (*Orchestration, error) {
+	fsConventionsPath := path.Join(tPath, "filesystem-conventions.yml")
+	fluxcdPath := path.Join(tPath, "fluxcd.yml")
+	appPath := path.Join(tPath, "app")
+	
 	var o Orchestration
 
 	var fsCoErr error
-	o.FsConventions, fsCoErr = loadFsConventions(tPath, params)
+	o.FsConventions, fsCoErr = loadFsConventions(fsConventionsPath, params)
 	if fsCoErr != nil {
 		return nil, fsCoErr
 	}
 
 	var flFiErr error
-	o.FluxcdFile, flFiErr = loadFluxcdFile(tPath, params)
+	o.FluxcdFile, flFiErr = params.LoadFile(fluxcdPath)
 	if flFiErr != nil {
 		return nil, flFiErr
 	}
 
 	var appFlsErr error
-	o.AppFiles, appFlsErr = params.LoadDir(tPath)
+	o.AppFiles, appFlsErr = params.LoadDir(appPath)
 	if appFlsErr != nil {
 		return nil, appFlsErr
 	}
