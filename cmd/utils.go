@@ -11,6 +11,7 @@ import (
 	"github.com/Ferlab-Ste-Justine/ferlease/config"
 	"github.com/Ferlab-Ste-Justine/ferlease/fluxcd"
 	"github.com/Ferlab-Ste-Justine/ferlease/kustomization"
+	"github.com/Ferlab-Ste-Justine/ferlease/terraform"
 	"github.com/Ferlab-Ste-Justine/ferlease/tplcore"
 
     git "github.com/Ferlab-Ste-Justine/git-sdk"
@@ -95,7 +96,7 @@ func VerifyRepoSignatures(repo *git.GitRepository, signaturesPath string) error 
 	return git.VerifyTopCommit(repo, keys)
 }
 
-func SetupFluxcdWorkEnv(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
+func CloneRepo(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) *git.GitRepository {
 	exists, existsErr := PathExists(conf.RepoDir)
 	AbortOnErr(existsErr)
 
@@ -111,6 +112,12 @@ func SetupFluxcdWorkEnv(confOrch *config.Orchestration, conf *config.Config, ssh
 		verifyErr := VerifyRepoSignatures(repo, confOrch.AcceptedSignatures)
 		AbortOnErr(verifyErr)
 	}
+
+	return repo
+}
+
+func SetupFluxcdWorkEnv(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
+	repo := CloneRepo(confOrch, conf, sshCreds)
 
 	tmpl := tplcore.TemplateParameters{
 		Service:      conf.Service,
@@ -182,6 +189,67 @@ func RemoveFluxcdOrch(orchest *fluxcd.Orchestration, conf *config.Config) []stri
 
 	for fName, _ := range orchest.AppFiles {
 		fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
+		
+		rmErr := os.Remove(fPath)
+		AbortOnErr(rmErr)
+
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
+}
+
+func SetupTerraformWorkEnv(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *terraform.Orchestration) {
+	repo := CloneRepo(confOrch, conf, sshCreds)
+
+	tmpl := tplcore.TemplateParameters{
+		Service:      conf.Service,
+		Release:      conf.Release,
+		Environment:  conf.Environment,
+		CustomParams: conf.CustomParams,
+	}
+	orchest, orchErr := terraform.LoadTemplate(confOrch.TemplateDirectory, &tmpl)
+	AbortOnErr(orchErr)
+
+	return repo, orchest
+}
+
+func ApplyTerraformOrch(orchest *terraform.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+		
+	var wErr error
+
+	entrypointFileName := fmt.Sprintf("%s.tf", orchest.FsConventions.Naming)
+	entrypointFilePath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, entrypointFileName)
+	wErr = WriteOnFile(entrypointFilePath, orchest.EntrypointFile)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(entrypointFilePath, conf.RepoDir))
+
+	for fName, fValue := range orchest.ModuleFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, orchest.FsConventions.Naming, fName)
+		
+		mkErr := os.MkdirAll(path.Dir(fPath), 0700)
+		AbortOnErr(mkErr)
+		
+		wErr = WriteOnFile(fPath, fValue)
+		AbortOnErr(wErr)
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
+}
+
+func RemoveTerraformOrch(orchest *terraform.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+
+	entrypointFileName := fmt.Sprintf("%s.tf", orchest.FsConventions.Naming)
+	entrypointFilePath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, entrypointFileName)
+	rmErr := os.Remove(entrypointFilePath)
+	AbortOnErr(rmErr)
+	commitList = append(commitList, PathRelativeToRepo(entrypointFilePath, conf.RepoDir))
+
+	for fName, _ := range orchest.ModuleFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, orchest.FsConventions.Naming, fName)
 		
 		rmErr := os.Remove(fPath)
 		AbortOnErr(rmErr)

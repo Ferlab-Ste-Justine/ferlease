@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"github.com/Ferlab-Ste-Justine/ferlease/config"
+	"github.com/Ferlab-Ste-Justine/ferlease/fluxcd"
+	"github.com/Ferlab-Ste-Justine/ferlease/terraform"
 
 	git "github.com/Ferlab-Ste-Justine/git-sdk"
 	"github.com/spf13/cobra"
@@ -20,9 +22,20 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 				AbortOnErr(sshCredsErr)
 	
 				err = git.PushChanges(func() (*git.GitRepository, error) {					
-					repo, orchest := SetupFluxcdWorkEnv(&confOrch, conf, sshCreds)
-					
-					commitList := RemoveFluxcdOrch(orchest, conf)
+					var repo *git.GitRepository
+					var commitList []string
+
+					if confOrch.Type == "fluxcd" {
+						var orchest *fluxcd.Orchestration
+						repo, orchest = SetupFluxcdWorkEnv(&confOrch, conf, sshCreds)
+
+						commitList = RemoveFluxcdOrch(orchest, conf)
+					} else {
+						var orchest *terraform.Orchestration
+						repo, orchest = SetupTerraformWorkEnv(&confOrch, conf, sshCreds)
+
+						commitList = RemoveTerraformOrch(orchest, conf)
+					}
 	
 					var signature *git.CommitSignatureKey
 					var signatureErr error

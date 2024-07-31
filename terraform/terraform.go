@@ -27,7 +27,7 @@ func loadFsConventions(fPath string, params *tplcore.TemplateParameters) (*FsCon
 		return nil, err
 	}
 
-	yamlErr := yaml.Unmarshal(res, &conv)
+	yamlErr := yaml.Unmarshal([]byte(res), &conv)
 	if yamlErr != nil {
 		return nil, yamlErr
 	}
