@@ -13,11 +13,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type CommiterConfig struct {
-	Name  string
-	Email string
-}
-
 type AuthorConfig struct {
 	Name  string
 	Email string
@@ -33,23 +28,28 @@ type GitAuthConfig struct {
     KnownKey string `yaml:"known_key"`
 }
 
-type Config struct {
-	Operation          string                `yaml:"-"`
-	Service            string
-	Release            string
-	Environment        string
+type Orchestration struct {
+	Type               string
 	Repo               string
-	RepoDir            string                `yaml:"-"`
 	Ref                string
 	GitAuth            GitAuthConfig         `yaml:"git_auth"`
-	Author             AuthorConfig
 	CommitSignature    CommitSignatureConfig `yaml:"commit_signature"`
 	AcceptedSignatures string                `yaml:"accepted_signatures"`
 	TemplateDirectory  string                `yaml:"template_directory"`
+}
+
+type Config struct {
+	Operation          string                `yaml:"-"`
+	RepoDir            string                `yaml:"-"`
+	Service            string
+	Release            string
+	Environment        string
 	CustomParams       map[string]string     `yaml:"custom_parameters"`
+	Author             AuthorConfig
 	CommitMessage      string                `yaml:"commit_message"`
 	PushRetries        int64                 `yaml:"push_retries"`
 	PushRetryInterval  time.Duration         `yaml:"push_retry_interval"`
+	Orchestrations     []Orchestration
 }
 
 func renderStr(s string, c *Config) (string, error) {
@@ -90,26 +90,36 @@ func GetConfig(path string, operation string) (*Config, error) {
 
 	homeDir, homeDirErr := os.UserHomeDir()
 	if homeDirErr == nil {
-		c.GitAuth.SshKey = expandPath(c.GitAuth.SshKey, homeDir)
-		c.GitAuth.KnownKey = expandPath(c.GitAuth.KnownKey, homeDir)
-		c.TemplateDirectory = expandPath(c.TemplateDirectory, homeDir)
+		for idx, _ := range c.Orchestrations {
+			c.Orchestrations[idx].GitAuth.SshKey = expandPath(c.Orchestrations[idx].GitAuth.SshKey, homeDir)
+			c.Orchestrations[idx].GitAuth.KnownKey = expandPath(c.Orchestrations[idx].GitAuth.KnownKey, homeDir)
+			c.Orchestrations[idx].TemplateDirectory = expandPath(c.Orchestrations[idx].TemplateDirectory, homeDir)
+		}
 	}
 
 	c.RepoDir = fmt.Sprintf("%s-%s", c.Service, c.Release)
 
 	var str string
 
-	str, err = renderStr(c.TemplateDirectory, &c)
-	if err != nil {
-		return nil, err
+	for idx, _ := range c.Orchestrations {
+		str, err = renderStr(c.Orchestrations[idx].TemplateDirectory, &c)
+		if err != nil {
+			return nil, err
+		}
+		c.Orchestrations[idx].TemplateDirectory = str
 	}
-	c.TemplateDirectory = str
 
 	str, err = renderStr(c.CommitMessage, &c)
 	if err != nil {
 		return nil, err
 	}
 	c.CommitMessage = str
+
+	for _, orch := range c.Orchestrations {
+		if orch.Type != "fluxcd" && orch.Type != "terraform" {
+			return nil, errors.New(fmt.Sprintf("Orchestration of type '%s' is not recognized. Valid values are 'fluxcd' or 'terraform", orch.Type))
+		}
+	}
 
 	return &c, nil
 }

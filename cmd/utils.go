@@ -94,7 +94,7 @@ func VerifyRepoSignatures(repo *git.GitRepository, signaturesPath string) error 
 	return git.VerifyTopCommit(repo, keys)
 }
 
-func SetupFluxcdWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
+func SetupFluxcdWorkEnv(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
 	exists, existsErr := PathExists(conf.RepoDir)
 	AbortOnErr(existsErr)
 
@@ -103,11 +103,11 @@ func SetupFluxcdWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git
 		AbortOnErr(err)
 	}
 
-	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, sshCreds)
+	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, confOrch.Repo, confOrch.Ref, sshCreds)
 	AbortOnErr(repErr)
 
-	if conf.AcceptedSignatures != "" {
-		verifyErr := VerifyRepoSignatures(repo, conf.AcceptedSignatures)
+	if confOrch.AcceptedSignatures != "" {
+		verifyErr := VerifyRepoSignatures(repo, confOrch.AcceptedSignatures)
 		AbortOnErr(verifyErr)
 	}
 
@@ -117,7 +117,7 @@ func SetupFluxcdWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git
 		Environment:  conf.Environment,
 		CustomParams: conf.CustomParams,
 	}
-	orchest, orchErr := fluxcd.LoadTemplate(conf.TemplateDirectory, &tmpl)
+	orchest, orchErr := fluxcd.LoadTemplate(confOrch.TemplateDirectory, &tmpl)
 	AbortOnErr(orchErr)
 
 	return repo, orchest
