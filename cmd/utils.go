@@ -8,8 +8,11 @@ import (
 	"path"
 	"path/filepath"
 
-	"ferlab/ferlease/config"
-	"ferlab/ferlease/template"
+	"github.com/Ferlab-Ste-Justine/ferlease/config"
+	"github.com/Ferlab-Ste-Justine/ferlease/fluxcd"
+	"github.com/Ferlab-Ste-Justine/ferlease/kustomization"
+	"github.com/Ferlab-Ste-Justine/ferlease/terraform"
+	"github.com/Ferlab-Ste-Justine/ferlease/tplcore"
 
     git "github.com/Ferlab-Ste-Justine/git-sdk"
 )
@@ -93,7 +96,7 @@ func VerifyRepoSignatures(repo *git.GitRepository, signaturesPath string) error 
 	return git.VerifyTopCommit(repo, keys)
 }
 
-func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *template.Orchestration) {
+func CloneRepo(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) *git.GitRepository {
 	exists, existsErr := PathExists(conf.RepoDir)
 	AbortOnErr(existsErr)
 
@@ -102,21 +105,157 @@ func SetupWorkEnv(conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRe
 		AbortOnErr(err)
 	}
 
-	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, conf.Repo, conf.Ref, sshCreds)
+	repo, _, repErr := git.SyncGitRepo(conf.RepoDir, confOrch.Repo, confOrch.Ref, sshCreds)
 	AbortOnErr(repErr)
 
-	if conf.AcceptedSignatures != "" {
-		verifyErr := VerifyRepoSignatures(repo, conf.AcceptedSignatures)
+	if confOrch.AcceptedSignatures != "" {
+		verifyErr := VerifyRepoSignatures(repo, confOrch.AcceptedSignatures)
 		AbortOnErr(verifyErr)
 	}
 
-	tmpl := template.TemplateParameters{
-		Service:     conf.Service,
-		Release:     conf.Release,
-		Environment: conf.Environment,
+	return repo
+}
+
+func SetupFluxcdWorkEnv(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *fluxcd.Orchestration) {
+	repo := CloneRepo(confOrch, conf, sshCreds)
+
+	tmpl := tplcore.TemplateParameters{
+		Service:      conf.Service,
+		Release:      conf.Release,
+		Environment:  conf.Environment,
+		CustomParams: conf.CustomParams,
 	}
-	orchest, orchErr := template.LoadTemplate(conf.TemplateDirectory, &tmpl)
+	orchest, orchErr := fluxcd.LoadTemplate(confOrch.TemplateDirectory, &tmpl)
 	AbortOnErr(orchErr)
 
 	return repo, orchest
+}
+
+func ApplyFluxcdOrch(orchest *fluxcd.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+		
+	var wErr error
+
+	fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
+	fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)
+	wErr = WriteOnFile(fluxcdFilePath, orchest.FluxcdFile)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(fluxcdFilePath, conf.RepoDir))
+
+	kusPath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
+	kus, kusErr := kustomization.GetKustomization(kusPath)
+	AbortOnErr(kusErr)
+
+	kus.AddResource(fluxcdFileName)
+	rend, rendErr := kus.Render()
+	AbortOnErr(rendErr)
+	wErr = WriteOnFile(kusPath, rend)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(kusPath, conf.RepoDir))
+
+	for fName, fValue := range orchest.AppFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
+		
+		mkErr := os.MkdirAll(path.Dir(fPath), 0700)
+		AbortOnErr(mkErr)
+		
+		wErr = WriteOnFile(fPath, fValue)
+		AbortOnErr(wErr)
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
+}
+
+func RemoveFluxcdOrch(orchest *fluxcd.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+
+	fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
+	fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)
+	rmErr := os.Remove(fluxcdFilePath)
+	AbortOnErr(rmErr)
+	commitList = append(commitList, PathRelativeToRepo(fluxcdFilePath, conf.RepoDir))
+
+	kusPath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
+	kus, kusErr := kustomization.GetKustomization(kusPath)
+	AbortOnErr(kusErr)
+
+	kus.RemoveResource(fluxcdFileName)
+	rend, rendErr := kus.Render()
+	AbortOnErr(rendErr)
+	wErr := WriteOnFile(kusPath, rend)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(kusPath, conf.RepoDir))
+
+	for fName, _ := range orchest.AppFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
+		
+		rmErr := os.Remove(fPath)
+		AbortOnErr(rmErr)
+
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
+}
+
+func SetupTerraformWorkEnv(confOrch *config.Orchestration, conf *config.Config, sshCreds *git.SshCredentials) (*git.GitRepository, *terraform.Orchestration) {
+	repo := CloneRepo(confOrch, conf, sshCreds)
+
+	tmpl := tplcore.TemplateParameters{
+		Service:      conf.Service,
+		Release:      conf.Release,
+		Environment:  conf.Environment,
+		CustomParams: conf.CustomParams,
+	}
+	orchest, orchErr := terraform.LoadTemplate(confOrch.TemplateDirectory, &tmpl)
+	AbortOnErr(orchErr)
+
+	return repo, orchest
+}
+
+func ApplyTerraformOrch(orchest *terraform.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+		
+	var wErr error
+
+	entrypointFileName := fmt.Sprintf("%s.tf", orchest.FsConventions.Naming)
+	entrypointFilePath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, entrypointFileName)
+	wErr = WriteOnFile(entrypointFilePath, orchest.EntrypointFile)
+	AbortOnErr(wErr)
+	commitList = append(commitList, PathRelativeToRepo(entrypointFilePath, conf.RepoDir))
+
+	for fName, fValue := range orchest.ModuleFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, orchest.FsConventions.Naming, fName)
+		
+		mkErr := os.MkdirAll(path.Dir(fPath), 0700)
+		AbortOnErr(mkErr)
+		
+		wErr = WriteOnFile(fPath, fValue)
+		AbortOnErr(wErr)
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
+}
+
+func RemoveTerraformOrch(orchest *terraform.Orchestration, conf *config.Config) []string {
+	commitList := []string{}
+
+	entrypointFileName := fmt.Sprintf("%s.tf", orchest.FsConventions.Naming)
+	entrypointFilePath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, entrypointFileName)
+	rmErr := os.Remove(entrypointFilePath)
+	AbortOnErr(rmErr)
+	commitList = append(commitList, PathRelativeToRepo(entrypointFilePath, conf.RepoDir))
+
+	for fName, _ := range orchest.ModuleFiles {
+		fPath := path.Join(conf.RepoDir, orchest.FsConventions.Dir, orchest.FsConventions.Naming, fName)
+		
+		rmErr := os.Remove(fPath)
+		AbortOnErr(rmErr)
+
+		commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
+	}
+
+	return commitList
 }

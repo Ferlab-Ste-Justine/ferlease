@@ -1,19 +1,48 @@
-service: hello-world
+service: fhir
 release: "test"
 environment: "qa"
-repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
-ref: main
-git_auth:
-  ssh_key: "/opt/id_rsa"
-  known_key: "/opt/known_host"
-author:
-  name: "Your Name"
-  email: "your@email.com"
-#commit_signature:
-#  key: /opt/gpg-keys/tester.asc
-#  passphrase: /opt/gpg-keys/passphrase
-#accepted_signatures: /opt/accepted-signatures
-template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}"
+custom_parameters:
+  Org: ferlab
+  Project: troubleshoot
+#author:
+#  name: "Your Name"
+#  email: "your@email.com"
 commit_message: "{{ if eq .Operation \"release\" }}Adding{{ else }}Removing{{ end }} release {{.Release}} of service {{.Service}}"
 push_retries: 60
 push_retry_interval: "5s"
+orchestrations:
+  - type: fluxcd
+    repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
+    ref: main
+    git_auth:
+      ssh_key: "/opt/id_rsa"
+      known_key: "/opt/known_host"
+    template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}/kubernetes"
+  # commit_signature:
+  #   key: gpg-keys/tester.asc
+  #   passphrase: gpg-keys/passphrase
+  # accepted_signatures: accepted-signatures
+  - type: terraform
+    repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
+    ref: main
+    git_auth:
+      ssh_key: "/opt/id_rsa"
+      known_key: "/opt/known_host"
+    template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}/postgres-db"
+    commit_message: "{{ if eq .Operation \"release\" }}Adding{{ else }}Removing{{ end }} database {{.Release}} of service {{.Service}}"
+  # commit_signature:
+  #   key: gpg-keys/tester.asc
+  #   passphrase: gpg-keys/passphrase
+  # accepted_signatures: accepted-signatures
+  - type: terraform
+    repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
+    ref: main
+    git_auth:
+      ssh_key: "/opt/id_rsa"
+      known_key: "/opt/known_host"
+    template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}/vault-secrets"
+    commit_message: "{{ if eq .Operation \"release\" }}Adding{{ else }}Removing{{ end }} database secrets {{.Release}} of service {{.Service}}"
+  # commit_signature:
+  #   key: gpg-keys/tester.asc
+  #   passphrase: gpg-keys/passphrase
+  # accepted_signatures: accepted-signatures

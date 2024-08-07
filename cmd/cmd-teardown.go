@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"path"
-
-	"ferlab/ferlease/config"
-	"ferlab/ferlease/kustomization"
+	"github.com/Ferlab-Ste-Justine/ferlease/config"
+	"github.com/Ferlab-Ste-Justine/ferlease/fluxcd"
+	"github.com/Ferlab-Ste-Justine/ferlease/terraform"
 
 	git "github.com/Ferlab-Ste-Justine/git-sdk"
 	"github.com/spf13/cobra"
@@ -20,66 +17,53 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 			conf, err := config.GetConfig(*confPath, "teardown")
 			AbortOnErr(err)
 
-			sshCreds, sshCredsErr := git.GetSshCredentials(conf.GitAuth.SshKey, conf.GitAuth.KnownKey)
-			AbortOnErr(sshCredsErr)
-
-			err = git.PushChanges(func() (*git.GitRepository, error) {
-				commitList := []string{}
-				
-				repo, orchest := SetupWorkEnv(conf, sshCreds)
-				
-				fluxcdFileName := fmt.Sprintf("%s.yml", orchest.FsConventions.Naming)
-				fluxcdFilePath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, fluxcdFileName)
-				rmErr := os.Remove(fluxcdFilePath)
-				AbortOnErr(rmErr)
-				commitList = append(commitList, PathRelativeToRepo(fluxcdFilePath, conf.RepoDir))
-
-				kusPath := path.Join(conf.RepoDir, orchest.FsConventions.FluxcdDir, "kustomization.yaml")
-				kus, kusErr := kustomization.GetKustomization(kusPath)
-				AbortOnErr(kusErr)
-
-				kus.RemoveResource(fluxcdFileName)
-				rend, rendErr := kus.Render()
-				AbortOnErr(rendErr)
-				wErr := WriteOnFile(kusPath, rend)
-				AbortOnErr(wErr)
-				commitList = append(commitList, PathRelativeToRepo(kusPath, conf.RepoDir))
-
-				for fName, _ := range orchest.AppFiles {
-					fPath := path.Join(conf.RepoDir, orchest.FsConventions.AppsDir, orchest.FsConventions.Naming, fName)
-					
-					rmErr := os.Remove(fPath)
-					AbortOnErr(rmErr)
-
-					commitList = append(commitList, PathRelativeToRepo(fPath, conf.RepoDir))
-				}
-
-				var signature *git.CommitSignatureKey
-				var signatureErr error
-				if conf.CommitSignature.Key != "" {
-					signature, signatureErr = git.GetSignatureKey(conf.CommitSignature.Key, conf.CommitSignature.Passphrase)
-					AbortOnErr(signatureErr)
-				}
-
-				changes, comErr := git.CommitFiles(
-					repo, 
-					commitList, 
-					conf.CommitMessage,
-					git.CommitOptions{
-						Name: conf.Author.Name,
-						Email: conf.Author.Email,
-						SignatureKey: signature,
-					},
-				)
-				AbortOnErr(comErr)
+			for _, confOrch := range conf.Orchestrations {
+				sshCreds, sshCredsErr := git.GetSshCredentials(confOrch.GitAuth.SshKey, confOrch.GitAuth.KnownKey)
+				AbortOnErr(sshCredsErr)
 	
-				if !changes {
-					return nil, nil
-				}
+				err = git.PushChanges(func() (*git.GitRepository, error) {					
+					var repo *git.GitRepository
+					var commitList []string
 
-				return repo, nil
-			}, conf.Ref, sshCreds, conf.PushRetries, conf.PushRetryInterval)
-			AbortOnErr(err)
+					if confOrch.Type == "fluxcd" {
+						var orchest *fluxcd.Orchestration
+						repo, orchest = SetupFluxcdWorkEnv(&confOrch, conf, sshCreds)
+
+						commitList = RemoveFluxcdOrch(orchest, conf)
+					} else {
+						var orchest *terraform.Orchestration
+						repo, orchest = SetupTerraformWorkEnv(&confOrch, conf, sshCreds)
+
+						commitList = RemoveTerraformOrch(orchest, conf)
+					}
+	
+					var signature *git.CommitSignatureKey
+					var signatureErr error
+					if confOrch.CommitSignature.Key != "" {
+						signature, signatureErr = git.GetSignatureKey(confOrch.CommitSignature.Key, confOrch.CommitSignature.Passphrase)
+						AbortOnErr(signatureErr)
+					}
+	
+					changes, comErr := git.CommitFiles(
+						repo, 
+						commitList, 
+						confOrch.CommitMessage,
+						git.CommitOptions{
+							Name: conf.Author.Name,
+							Email: conf.Author.Email,
+							SignatureKey: signature,
+						},
+					)
+					AbortOnErr(comErr)
+		
+					if !changes {
+						return nil, nil
+					}
+	
+					return repo, nil
+				}, confOrch.Ref, sshCreds, conf.PushRetries, conf.PushRetryInterval)
+				AbortOnErr(err)
+			}
 		},
 	}
 
