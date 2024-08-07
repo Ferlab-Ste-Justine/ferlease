@@ -11,7 +11,8 @@ commit_message: "{{ if eq .Operation \"release\" }}Adding{{ else }}Removing{{ en
 push_retries: 60
 push_retry_interval: "5s"
 orchestrations:
-  - repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
+  - type: fluxcd
+    repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
     ref: main
     git_auth:
       ssh_key: "/opt/id_rsa"
@@ -21,7 +22,8 @@ orchestrations:
   #   key: gpg-keys/tester.asc
   #   passphrase: gpg-keys/passphrase
   # accepted_signatures: accepted-signatures
-  - repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
+  - type: terraform
+    repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
     ref: main
     git_auth:
       ssh_key: "/opt/id_rsa"
@@ -32,13 +34,14 @@ orchestrations:
   #   key: gpg-keys/tester.asc
   #   passphrase: gpg-keys/passphrase
   # accepted_signatures: accepted-signatures
-  - repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
+  - type: terraform
+    repo: "git@github.com:Ferlab-Ste-Justine/ferlease-playground.git"
     ref: main
     git_auth:
       ssh_key: "/opt/id_rsa"
       known_key: "/opt/known_host"
     template_directory: "{{.RepoDir}}/ferlease-templates/{{.Service}}/vault-secrets"
-    commit_message: "{{ if eq .Operation \"release\" }}Adding{{ else }}Removing{{ end }} database {{.Release}} of service {{.Service}}"
+    commit_message: "{{ if eq .Operation \"release\" }}Adding{{ else }}Removing{{ end }} database secrets {{.Release}} of service {{.Service}}"
   # commit_signature:
   #   key: gpg-keys/tester.asc
   #   passphrase: gpg-keys/passphrase
