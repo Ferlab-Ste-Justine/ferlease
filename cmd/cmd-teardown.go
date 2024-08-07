@@ -47,7 +47,7 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 					changes, comErr := git.CommitFiles(
 						repo, 
 						commitList, 
-						conf.CommitMessage,
+						confOrch.CommitMessage,
 						git.CommitOptions{
 							Name: conf.Author.Name,
 							Email: conf.Author.Email,
