@@ -34,6 +34,7 @@ type Orchestration struct {
 	Ref                string
 	GitAuth            GitAuthConfig         `yaml:"git_auth"`
 	CommitSignature    CommitSignatureConfig `yaml:"commit_signature"`
+	CommitMessage      string                `yaml:"commit_message"`
 	AcceptedSignatures string                `yaml:"accepted_signatures"`
 	TemplateDirectory  string                `yaml:"template_directory"`
 }
@@ -109,11 +110,30 @@ func GetConfig(path string, operation string) (*Config, error) {
 		c.Orchestrations[idx].TemplateDirectory = str
 	}
 
-	str, err = renderStr(c.CommitMessage, &c)
-	if err != nil {
-		return nil, err
+	if c.CommitMessage != "" {
+		str, err = renderStr(c.CommitMessage, &c)
+		if err != nil {
+			return nil, err
+		}
+		c.CommitMessage = str
 	}
-	c.CommitMessage = str
+
+	for idx, _ := range c.Orchestrations {
+		if c.Orchestrations[idx].CommitMessage == "" {
+			if c.CommitMessage == "" {
+				return nil, errors.New("Commit message for one of the orchestrations is empty. Either define a commit message for every orchestration or define a default commit message at the root of the configuration")
+			}
+
+			c.Orchestrations[idx].CommitMessage = c.CommitMessage
+			continue
+		}
+
+		str, err = renderStr(c.Orchestrations[idx].CommitMessage, &c)
+		if err != nil {
+			return nil, err
+		}
+		c.Orchestrations[idx].CommitMessage = str
+	}
 
 	for _, orch := range c.Orchestrations {
 		if orch.Type != "fluxcd" && orch.Type != "terraform" {
