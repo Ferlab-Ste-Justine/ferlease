@@ -18,7 +18,7 @@ func generateTeardownCmd(confPath *string) *cobra.Command {
 			AbortOnErr(err)
 
 			for _, confOrch := range conf.Orchestrations {
-				sshCreds, sshCredsErr := git.GetSshCredentials(confOrch.GitAuth.SshKey, confOrch.GitAuth.KnownKey)
+				sshCreds, sshCredsErr := git.GetSshCredentials(confOrch.GitAuth.SshKey, confOrch.GitAuth.KnownKey, confOrch.GitAuth.User)
 				AbortOnErr(sshCredsErr)
 	
 				err = git.PushChanges(func() (*git.GitRepository, error) {					

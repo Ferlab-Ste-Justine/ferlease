@@ -94,6 +94,7 @@ The configuration file should be in yaml and is expected to have the following p
     - **git_auth**: Git authentication. It has the following keys:
       - **ssh_key**: Ssh key to use to authentify with the git server. It should be the path to a file containing the key, not the key itself.
       - **known_key**: Path to a file containing the git server's ssh fingerprint. Used to authentify the server.
+      - **user**: User to user to identify as with the git server. Can be left empty for many git providers, but some like Gitea require it.
   - **commit_signature**: Path to gpg private key and its passphrase to sign commits. It has the following keys:
     - **key**: Path to a file containing the private key that will sign the commit
     - **passphrase**: Path to a file container the secret passphrase to decrypt the private key

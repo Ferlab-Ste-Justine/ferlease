@@ -26,6 +26,7 @@ type CommitSignatureConfig struct {
 type GitAuthConfig struct {
 	SshKey   string `yaml:"ssh_key"`
     KnownKey string `yaml:"known_key"`
+	User     string
 }
 
 type Orchestration struct {
