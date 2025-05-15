@@ -54,6 +54,63 @@ type Config struct {
 	Orchestrations     []Orchestration
 }
 
+func (c *Config) Process() error {
+	homeDir, homeDirErr := os.UserHomeDir()
+	if homeDirErr == nil {
+		for idx, _ := range c.Orchestrations {
+			c.Orchestrations[idx].GitAuth.SshKey = expandPath(c.Orchestrations[idx].GitAuth.SshKey, homeDir)
+			c.Orchestrations[idx].GitAuth.KnownKey = expandPath(c.Orchestrations[idx].GitAuth.KnownKey, homeDir)
+			c.Orchestrations[idx].TemplateDirectory = expandPath(c.Orchestrations[idx].TemplateDirectory, homeDir)
+		}
+	}
+
+	c.RepoDir = fmt.Sprintf("%s-%s", c.Service, c.Release)
+
+	var str string
+	var err error
+
+	for idx, _ := range c.Orchestrations {
+		str, err = renderStr(c.Orchestrations[idx].TemplateDirectory, c)
+		if err != nil {
+			return err
+		}
+		c.Orchestrations[idx].TemplateDirectory = str
+	}
+
+	if c.CommitMessage != "" {
+		str, err = renderStr(c.CommitMessage, c)
+		if err != nil {
+			return err
+		}
+		c.CommitMessage = str
+	}
+
+	for idx, _ := range c.Orchestrations {
+		if c.Orchestrations[idx].CommitMessage == "" {
+			if c.CommitMessage == "" {
+				return errors.New("Commit message for one of the orchestrations is empty. Either define a commit message for every orchestration or define a default commit message at the root of the configuration")
+			}
+
+			c.Orchestrations[idx].CommitMessage = c.CommitMessage
+			continue
+		}
+
+		str, err = renderStr(c.Orchestrations[idx].CommitMessage, c)
+		if err != nil {
+			return err
+		}
+		c.Orchestrations[idx].CommitMessage = str
+	}
+
+	for _, orch := range c.Orchestrations {
+		if orch.Type != "fluxcd" && orch.Type != "terraform" {
+			return errors.New(fmt.Sprintf("Orchestration of type '%s' is not recognized. Valid values are 'fluxcd' or 'terraform", orch.Type))
+		}
+	}
+
+	return nil
+}
+
 func renderStr(s string, c *Config) (string, error) {
 	tmpl, tErr := template.New("string").Parse(s)
 	if tErr != nil {
@@ -90,57 +147,5 @@ func GetConfig(path string, operation string) (*Config, error) {
 		return nil, errors.New(fmt.Sprintf("Error parsing the configuration file: %s", err.Error()))
 	}
 
-	homeDir, homeDirErr := os.UserHomeDir()
-	if homeDirErr == nil {
-		for idx, _ := range c.Orchestrations {
-			c.Orchestrations[idx].GitAuth.SshKey = expandPath(c.Orchestrations[idx].GitAuth.SshKey, homeDir)
-			c.Orchestrations[idx].GitAuth.KnownKey = expandPath(c.Orchestrations[idx].GitAuth.KnownKey, homeDir)
-			c.Orchestrations[idx].TemplateDirectory = expandPath(c.Orchestrations[idx].TemplateDirectory, homeDir)
-		}
-	}
-
-	c.RepoDir = fmt.Sprintf("%s-%s", c.Service, c.Release)
-
-	var str string
-
-	for idx, _ := range c.Orchestrations {
-		str, err = renderStr(c.Orchestrations[idx].TemplateDirectory, &c)
-		if err != nil {
-			return nil, err
-		}
-		c.Orchestrations[idx].TemplateDirectory = str
-	}
-
-	if c.CommitMessage != "" {
-		str, err = renderStr(c.CommitMessage, &c)
-		if err != nil {
-			return nil, err
-		}
-		c.CommitMessage = str
-	}
-
-	for idx, _ := range c.Orchestrations {
-		if c.Orchestrations[idx].CommitMessage == "" {
-			if c.CommitMessage == "" {
-				return nil, errors.New("Commit message for one of the orchestrations is empty. Either define a commit message for every orchestration or define a default commit message at the root of the configuration")
-			}
-
-			c.Orchestrations[idx].CommitMessage = c.CommitMessage
-			continue
-		}
-
-		str, err = renderStr(c.Orchestrations[idx].CommitMessage, &c)
-		if err != nil {
-			return nil, err
-		}
-		c.Orchestrations[idx].CommitMessage = str
-	}
-
-	for _, orch := range c.Orchestrations {
-		if orch.Type != "fluxcd" && orch.Type != "terraform" {
-			return nil, errors.New(fmt.Sprintf("Orchestration of type '%s' is not recognized. Valid values are 'fluxcd' or 'terraform", orch.Type))
-		}
-	}
-
-	return &c, nil
+	return &c, c.Process()
 }
