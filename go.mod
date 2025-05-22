@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.4
 
 require (
-	github.com/Ferlab-Ste-Justine/git-sdk v0.7.0
+	github.com/Ferlab-Ste-Justine/git-sdk v0.9.0
 	github.com/spf13/cobra v1.9.1
 	gopkg.in/yaml.v2 v2.4.0
 )
