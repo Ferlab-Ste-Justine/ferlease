@@ -25,15 +25,19 @@ Here is an overview diagram of how templating works with fluxcd to achieve the a
 
 ![Fluxcd Template Architecture](fluxcd_template_architecture.png)
 
-## Terratorm Module Template Architecture
-
-TODO
-
 ## Terraform File Template Architecture
 
 Here is an overview diagram of how templating work for terraform files:
 
 ![Terraform File Template Architecture](terraform_file_template_architecture.png)
+
+## Terratorm Module Template Architecture
+
+Here is an overview diagram of how templating work for terraform modules:
+
+![Terraform File Template Architecture](terraform_file_template_architecture.png)
+
+Here, an entrypoint template is used like in the standalone terraform file in order for you to declare the module invocation as part of your template.
 
 # Usage
 
