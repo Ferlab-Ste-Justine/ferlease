@@ -35,7 +35,7 @@ Here is an overview diagram of how templating work for terraform files:
 
 Here is an overview diagram of how templating work for terraform modules:
 
-![Terraform File Template Architecture](terraform_file_template_architecture.png)
+![Terraform Module Template Architecture](terraform_module_template_architecture.png)
 
 Here, an entrypoint template is used like in the standalone terraform file in order for you to declare the module invocation as part of your template.
 
