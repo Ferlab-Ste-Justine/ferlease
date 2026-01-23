@@ -17,7 +17,13 @@ Here is a diagram of the top-level workflow:
 
 ## Fluxcd Template Architecture
 
-TODO
+Here is an overview diagram of the rendered layout (corresponding to how we tend to orchestrate fluxcd resources separately from target resources here at ferlab):
+
+![Fluxcd Rendered Layout](fluxcd_rendered_layout.png)
+
+Here is an overview diagram of how templating works with fluxcd to achieve the above layout:
+
+![Fluxcd Template Architecture](fluxcd_template_architecture.png)
 
 ## Terratorm Module Template Architecture
 
