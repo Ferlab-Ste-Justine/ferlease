@@ -1,8 +1,33 @@
 # About
 
-This client is meant to add and remove several concurrent versions of the same service, corresponding to various ongoing feature branches, in a gitops manner.
+This client helps to add and remove several concurrent versions of the same service, corresponding to various ongoing feature branches, in a gitops manner. We are currently using it for running integration tests on deployments of said feature branches. 
 
-Currently, both kubernetes fluxcd and terraform orchestration are supported across several repos.
+This tool doesn't implement the entire flow of tying feature branches to releases in your orchestration repositores. Rather, it provides a way to add and remove releases to one or multiple repositories in a gitops manner, using templates that can be populated with release parameters.
+
+It is meant to be integrated with another CI solution, which will act of events happening to feature branches and call this tool to add or remove deployments containing new features to be tested.
+
+Currently, templates for kubernetes fluxcd and terraform orchestration are supported across several repos. Other kinds of templates may be added in the future as needed.
+
+# Architecture
+
+Here is a diagram of the top-level workflow:
+
+![Top Level Architecture](top_level_architecture.png)
+
+
+## Fluxcd Template Architecture
+
+TODO
+
+## Terratorm Module Template Architecture
+
+TODO
+
+## Terraform File Template Architecture
+
+Here is an overview diagram of how templating work for terraform files:
+
+![Terraform File Template Architecture](terraform_file_template_architecture.png)
 
 # Usage
 
